@@ -1,12 +1,17 @@
 const User = require("../schema/AuthSchema");
 const { generateToken } = require("../utlity/generateToken");
 const { setTokenCookie } = require("../utlity/setCookie");
+const { generateOtp, sendOtp } = require("../utils/otp");
 
 // Controller for user signup
 const SignUp = async (req, res) => {
-  const { username, email, password, number, role } = req.body;
+  const { username, email, password, number, role, otp } = req.body;
 
   try {
+    if (!username || !email || !password || !number || !role || !otp) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
     // Check if user already exists by email or number
     const userExists = await User.findOne({
       $or: [{ email }, { number }],
