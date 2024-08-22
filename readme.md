@@ -28,10 +28,10 @@ npm install
 
 ## Development
 
-Copy the .env.example file to .env
+Copy the .env.sample file to .env
 
 ```
-cp .env.example .env
+copy .env.sample .env
 ```
 
 Start server, watch changes and update build in development mode:
