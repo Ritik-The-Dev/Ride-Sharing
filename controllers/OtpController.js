@@ -1,5 +1,5 @@
 const User = require("../schema/AuthSchema");
-const { generateOtp, sendOtp } = require("../utils/otp");
+const { generateOtp, sendOtp } = require("../utility/otp");
 const nodemailer = require("nodemailer");
 let otpStorage = {};
 

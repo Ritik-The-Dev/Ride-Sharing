@@ -1,7 +1,7 @@
 const User = require("../schema/AuthSchema");
-const { generateToken } = require("../utlity/generateToken");
-const { setTokenCookie } = require("../utlity/setCookie");
-const { generateOtp, sendOtp } = require("../utils/otp");
+const { generateToken } = require("../utility/generateToken");
+const { setTokenCookie } = require("../utility/setCookie");
+const { generateOtp, sendOtp } = require("../utility/otp");
 
 // Controller for user signup
 const SignUp = async (req, res) => {
