@@ -1,8 +1,8 @@
 const User = require("../schema/AuthSchema");
-const { generateOtp, sendOtp } = require("../utility/otp");
-const nodemailer = require("nodemailer");
-let otpStorage = {};
+const Otp = require("../schema/OtpSchema");
+const { generateOtp, sendOtp, sendEmailOtp } = require("../utility/otp");
 
+// Controller for sending OTP during Signup
 const SignUpOtp = async (req, res) => {
   const { number } = req.body;
 
@@ -21,14 +21,18 @@ const SignUpOtp = async (req, res) => {
         .json({ message: "User already exists with this phone number" });
     }
 
+    // Check if OTP is already sent
+    const previousOtp = await Otp.findOne({ number });
+    if (previousOtp) {
+      return res.status(400).json({
+        message: "Please wait for 5mins before requesting a new OTP.",
+      });
+    }
+
     // Generate and send OTP
     const otpCode = generateOtp();
-    otpStorage[number] = {
-      otp: otpCode,
-      expiresAt: Date.now() + process.env.OTP_EXPIRATION_TIME * 60 * 1000, // Expiry time in milliseconds
-    };
-
     await sendOtp(number, otpCode);
+    await Otp.create({ otp: otpCode, number });
 
     res.status(200).json({ message: "OTP sent successfully" });
   } catch (error) {
@@ -36,6 +40,7 @@ const SignUpOtp = async (req, res) => {
   }
 };
 
+// Controller for sending OTP during Password Recovery
 const ForgetPassOtp = async (req, res) => {
   const { number } = req.body;
 
@@ -56,12 +61,8 @@ const ForgetPassOtp = async (req, res) => {
 
     // Generate and send OTP
     const otpCode = generateOtp();
-    otpStorage[number] = {
-      otp: otpCode,
-      expiresAt: Date.now() + process.env.OTP_EXPIRATION_TIME * 60 * 1000, // Expiry time in milliseconds
-    };
-
     await sendOtp(number, otpCode);
+    await Otp.create({ otp: otpCode, number });
 
     res
       .status(200)
@@ -71,6 +72,7 @@ const ForgetPassOtp = async (req, res) => {
   }
 };
 
+// Controller for sending OTP via Email
 const SendEmailOtp = async (req, res) => {
   const { email } = req.body;
 
@@ -82,39 +84,34 @@ const SendEmailOtp = async (req, res) => {
     }
 
     // Check if user exists
-    const userExists = await User.findOne({ email });
+    const userExists = await User.findOne({ email: email.toLowerCase() });
     if (!userExists) {
       return res
         .status(400)
         .json({ message: "User not found with this email" });
     }
 
-    // Generate OTP and set expiration
+    // Check if OTP is already sent
+    const previousOtp = await Otp.findOne({ email: email.toLowerCase() });
+    if (previousOtp) {
+      return res
+        .status(400)
+        .json({ message: "Please wait before requesting a new OTP." });
+    }
+
+    // Generate and send OTP
     const otpCode = generateOtp();
-    otpStorage[email] = {
-      otp: otpCode,
-      expiresAt: Date.now() + process.env.OTP_EXPIRATION_TIME * 60 * 1000, // Expiry time in milliseconds
+    const EmailTemplate = {
+      subject: "Email Verification for Ride Sharing 👀",
+      body: "Thank you for choosing Ride Sharing. Use the following OTP to complete your Email Verfication procedures. OTP is valid for 5 minutes",
     };
-
-    // Create transport for sending email
-    const transporter = nodemailer.createTransport({
-      service: "Gmail", // or any email service you use
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
-
-    // Email options
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: email,
-      subject: "Your OTP Code",
-      text: `Your OTP code is ${otpCode}`, // Use otpCode variable
-    };
-
-    // Send OTP via email
-    await transporter.sendMail(mailOptions);
+    await sendEmailOtp(
+      email.toLowerCase(),
+      otpCode,
+      EmailTemplate.subject,
+      EmailTemplate.body
+    );
+    await Otp.create({ otp: otpCode, email });
 
     res
       .status(200)

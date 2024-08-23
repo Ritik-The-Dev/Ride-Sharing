@@ -4,6 +4,7 @@ const socketIo = require("socket.io");
 const HTTP = require("http");
 const { connectDb } = require("./config/connectDb");
 const { AuthRoutes } = require("./routes/AuthRoutes");
+const { OtpRoutes } = require("./routes/OtpRoutes");
 
 require("dotenv").config();
 
@@ -36,6 +37,7 @@ app.get("/", (req, res) => {
 
 // Auth routes
 app.use("/api/auth", AuthRoutes); // AuthRoutes under '/api/auth' for clarity
+app.use("/api/otp", OtpRoutes); // OtpRoutes under '/api/otp' for clarity
 
 // Initializing Socket.IO
 const io = socketIo(server, {
